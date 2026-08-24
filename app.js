@@ -88,23 +88,46 @@ function finish(){
   $("resultDetail").textContent=`คิดเป็น ${Math.round(score/questions.length*100)}%`;
   show("result");
 }
-async function sendResult(){
-  const score=window.finalScore;
-  if(!API_URL || API_URL.includes("YOUR-WORKER")){
-    $("sendStatus").textContent="ยังไม่ได้ตั้งค่า Backend สำหรับส่งผล LINE กรุณาตั้ง API_URL ใน config.js";
-    return;
-  }
-  const payload={idToken:await liff.getIDToken(),userId:profile.userId,displayName:profile.displayName,score,total:questions.length,answers};
-  $("sendBtn").disabled=true;$("sendStatus").textContent="กำลังส่งผล...";
-  try{
-    const r=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-    const data=await r.json();
-    if(!r.ok) throw new Error(data.error||"ส่งผลไม่สำเร็จ");
-    $("sendStatus").textContent=data.message||"ส่งผลเรียบร้อยแล้ว";
-    if(liff.isInClient()) setTimeout(()=>liff.closeWindow(),1200);
-  }catch(e){
-    $("sendBtn").disabled=false;
-    $("sendStatus").textContent="ส่งไม่สำเร็จ: "+e.message;
+async function sendResultToLineChat() {
+  const statusEl = document.getElementById("status-message"); // ตัวแสดงข้อความ error/status
+
+  try {
+    // 1. ตรวจสอบว่าเปิดผ่าน LIFF และ Logged in หรือไม่
+    if (!liff.isLoggedIn()) {
+      liff.login();
+      return;
+    }
+
+    // 2. ตรวจสอบว่า LIFF มีสิทธิ์ส่งข้อความหรือไม่
+    if (!liff.isApiAvailable("sendMessages")) {
+      alert("เบราว์เซอร์นี้ไม่รองรับการส่งข้อความเข้าแชทโดยตรง กรุณาเปิดผ่านแชท LINE");
+      return;
+    }
+
+    // 3. ข้อความที่ต้องการส่งเข้าแชท
+    const textMessage = 
+`ผลการทดสอบวิชาชีพทรัพยากรบุคคล ระดับ 3
+
+คะแนน: ${score}/${totalScore}
+คิดเป็น: ${Math.round((score / totalScore) * 100)}%
+วันที่: ${new Intl.DateTimeFormat("th-TH", { dateStyle: "long", timeStyle: "short", timeZone: "Asia/Bangkok" }).format(new Date())}`;
+
+    // 4. ส่งข้อความเข้าแชทที่เปิดอยู่ทันทีผ่าน LIFF SDK (ไม่ต้องผ่าน Worker)
+    await liff.sendMessages([
+      {
+        type: "text",
+        text: textMessage
+      }
+    ]);
+
+    alert("ส่งผลเข้าแชทเรียบร้อยแล้ว!");
+    liff.closeWindow(); // ปิดหน้า LIFF อัตโนมัติหลังส่งเสร็จ
+
+  } catch (error) {
+    console.error("LINE Send Error:", error);
+    if (statusEl) {
+      statusEl.innerText = "ส่งไม่สำเร็จ: " + error.message;
+    }
   }
 }
 $("loginBtn").onclick=login;
