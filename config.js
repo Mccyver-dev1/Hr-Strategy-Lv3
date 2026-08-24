@@ -9,4 +9,4 @@ const LIFF_ENDPOINT_URL = window.location.origin + window.location.pathname;
 
 // URL ของ Cloudflare Worker หลัง Deploy Backend
 // ยังไม่ต้องใช้ในขั้นตอน Login
-const API_URL = "https://YOUR-WORKER.workers.dev";
+const API_URL = "https://mccyver-dev1.github.io/Hr-Strategy-Lv3/";
