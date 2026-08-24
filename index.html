@@ -1,101 +1,107 @@
 <!doctype html>
 <html lang="th">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#06c755">
-<title>HR Professional Level 3</title>
-<link rel="stylesheet" href="style.css">
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="config.js"></script>
-<script src="questions.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#06c755">
+  <title>HR Professional Level 3</title>
+  <!-- เพิ่ม ?v=1.0.5 ป้องกันปัญหาติด Cache เบราว์เซอร์ -->
+  <link rel="stylesheet" href="style.css?v=1.0.5">
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="config.js"></script>
+  <script src="questions.js"></script>
 </head>
 <body>
-<main class="container">
-  <section id="login" class="card center">
-    <img class="logo" src="logo.png" alt="Siam HRBP">
-    <h1>แบบทดสอบความรู้วิชาชีพทรัพยากรบุคคล</h1>
-    <p class="level">ระดับ 3 (50 ข้อ)</p>
+  <main class="container">
+    <!-- 1. หน้า Login -->
+    <section id="login" class="card center">
+      <img class="logo" src="logo.png" alt="Siam HRBP">
+      <h1>แบบทดสอบความรู้วิชาชีพทรัพยากรบุคคล</h1>
+      <p class="level">ระดับ 3 (50 ข้อ)</p>
 
-    <div id="errorBox" class="error hidden"></div>
+      <div id="errorBox" class="error hidden"></div>
 
-    <button id="loginBtn" class="primary">เข้าสู่ระบบด้วย LINE</button>
-    <p class="muted">ระบบนี้อนุญาตให้เข้าสอบผ่านบัญชี LINE เท่านั้น</p>
-    <p class="tiny">LIFF ID: <span id="liffIdText"></span></p>
-  </section>
+      <button id="loginBtn" class="primary">เข้าสู่ระบบด้วย LINE</button>
+      <p class="muted">ระบบนี้อนุญาตให้เข้าสอบผ่านบัญชี LINE เท่านั้น</p>
+      <p class="tiny">LIFF ID: <span id="liffIdText"></span></p>
+    </section>
 
-  <section id="quiz" class="card hidden">
-    <div class="profile">
-      <img id="avatar" alt="">
-      <div><strong id="name"></strong><small>ผู้เข้าสอบ</small></div>
-    </div>
-    <div class="progress"><span id="progressBar"></span></div>
-    <div id="progressText" class="muted"></div>
-    <h2 id="question"></h2>
-    <div id="choices" class="choices"></div>
-    <button id="nextBtn" class="primary" disabled>ข้อต่อไป</button>
-  </section>
-
-  <!-- UI หน้าผลลัพธ์ใหม่ตามรูปตัวอย่าง -->
-  <section id="result" class="card hidden">
-    <div class="result-header">
-      <div class="status-badge-wrap">
-        <div id="statusIcon" class="status-icon">👍</div>
-        <div class="status-text-wrap">
-          <span id="passStatus" class="pass-tag">PASSED</span>
-          <div id="scoreBanner" class="score-banner">0/50</div>
+    <!-- 2. หน้าทำข้อสอบ (Quiz) -->
+    <section id="quiz" class="card hidden">
+      <div class="profile">
+        <img id="avatar" src="" alt="Avatar">
+        <div>
+          <strong id="name"></strong>
+          <div class="tiny muted">ผู้เข้าสอบ</div>
         </div>
       </div>
-    </div>
+      <div class="progress"><span id="progressBar"></span></div>
+      <div id="progressText" class="muted"></div>
+      <h2 id="question"></h2>
+      <div id="choices" class="choices"></div>
+      <button id="nextBtn" class="primary" disabled>ข้อต่อไป</button>
+    </section>
 
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon green">👍</div>
-        <div class="stat-info">
-          <strong id="rightAnswers">0/50</strong>
-          <small>Right answers</small>
+    <!-- 3. หน้าสรุปผลลัพธ์ (Result) -->
+    <section id="result" class="card hidden">
+      <div class="result-header">
+        <div class="status-badge-wrap">
+          <div id="statusIcon" class="status-icon">👍</div>
+          <div class="status-text-wrap">
+            <span id="passStatus" class="pass-tag">PASSED</span>
+            <div id="scoreBanner" class="score-banner">0/50</div>
+          </div>
         </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon red">👎</div>
-        <div class="stat-info">
-          <strong id="wrongAnswers">0/50</strong>
-          <small>Wrong answers</small>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon green">👍</div>
+          <div class="stat-info">
+            <strong id="rightAnswers">0/50</strong>
+            <small>Right answers</small>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon red">👎</div>
+          <div class="stat-info">
+            <strong id="wrongAnswers">0/50</strong>
+            <small>Wrong answers</small>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="progress-bar-wrap">
-      <div id="resultProgressBar" class="result-progress-bar"></div>
-    </div>
+      <div class="progress-bar-wrap">
+        <div id="resultProgressBar" class="result-progress-bar"></div>
+      </div>
 
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon blue">%</div>
-        <div class="stat-info">
-          <strong id="overviewPercent">0%</strong>
-          <small>Overview</small>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon blue">%</div>
+          <div class="stat-info">
+            <strong id="overviewPercent">0%</strong>
+            <small>Overview</small>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon blue">⏰</div>
+          <div class="stat-info">
+            <strong id="durationTime">00:00:00</strong>
+            <small>Duration</small>
+          </div>
         </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon blue">⏰</div>
-        <div class="stat-info">
-          <strong id="durationTime">00:00:00</strong>
-          <small>Duration</small>
-        </div>
-      </div>
-    </div>
 
-    <h3 class="overview-title">Overview</h3>
-    <div id="gridOverview" class="grid-overview"></div>
+      <h3 class="overview-title">Overview</h3>
+      <div id="gridOverview" class="grid-overview"></div>
 
-    <button id="sendBtn" class="primary full-width">ส่งผลเข้าแชท LINE</button>
-    <button id="closeBtn" class="secondary full-width">ปิดหน้าต่าง</button>
-    <p id="sendStatus" class="muted text-center"></p>
-  </section>
-</main>
+      <button id="sendBtn" class="primary full-width">ส่งผลเข้าแชท LINE</button>
+      <button id="closeBtn" class="secondary full-width">ปิดหน้าต่าง</button>
+      <p id="sendStatus" class="muted text-center"></p>
+    </section>
+  </main>
 
-<footer>@2024 Siam-HRBP Soft</footer>
-<script src="app.js?v=1.0.4"></script>
+  <footer>@2024 Siam-HRBP Soft</footer>
+  <script src="app.js?v=1.0.5"></script>
 </body>
 </html>
