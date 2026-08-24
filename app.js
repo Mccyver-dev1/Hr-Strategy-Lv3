@@ -18,20 +18,26 @@ function show(id){ ["login","quiz","result"].forEach(x => $(x).classList.toggle(
 function showError(title, detail){
   const box = $("errorBox");
   if(box){
-    box.innerHTML = `<strong>${escapeHtml(title)}</strong> ${escapeHtml(detail)}`;
+    box.innerHTML = `<strong>${escapeHtml(title)}</strong><br>${escapeHtml(detail)}`;
     box.classList.remove("hidden");
   }
 }
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m])); }
 
 async function init(){
-  if($("liffIdText")) $("liffIdText").textContent = LIFF_ID;
+  const liffId = (typeof LIFF_ID !== "undefined") ? LIFF_ID : "";
+  if($("liffIdText")) $("liffIdText").textContent = liffId;
+
+  if(!liffId || liffId.includes("YOUR_LIFF_ID")){
+    showError("ตั้งค่าไม่สมบูรณ์", "ไม่พบค่า LIFF_ID ใน config.js");
+    return;
+  }
   if(typeof liff === "undefined"){
     showError("โหลด LINE LIFF ไม่สำเร็จ", "ไม่พบ LIFF SDK กรุณาตรวจสอบอินเทอร์เน็ต");
     return;
   }
   try{
-    await liff.init({liffId: LIFF_ID});
+    await liff.init({liffId: liffId});
     if(liff.isLoggedIn()) await start();
   }catch(e){
     console.error("LIFF init error", e);
@@ -44,7 +50,7 @@ async function login(){
   if($("errorBox")) $("errorBox").classList.add("hidden");
   try{
     if(!liff.isLoggedIn()){
-      liff.login({redirectUri: LIFF_ENDPOINT_URL});
+      liff.login({redirectUri: typeof LIFF_ENDPOINT_URL !== "undefined" ? LIFF_ENDPOINT_URL : window.location.href});
     }else{
       await start();
     }
@@ -87,63 +93,61 @@ function render(){
 
 function finish(){
   const score = answers.reduce((s, v, i) => s + (v === questions[i].c ? 1 : 0), 0);
-  window.finalScore = score; // บันทึกคะแนนลงในตัวแปร global
+  window.finalScore = score;
   $("score").textContent = `${score} / ${questions.length}`;
   $("resultDetail").textContent = `คิดเป็น ${Math.round(score/questions.length*100)}%`;
   show("result");
 }
 
-async function sendResultToLineChat() {
-  const statusEl = $("status-message") || $("errorBox");
+async function sendResult() {
+  const statusEl = $("sendStatus") || $("errorBox");
+  const sendBtn = $("sendBtn");
+  
+  if (sendBtn) sendBtn.disabled = true;
+  if (statusEl) statusEl.innerText = "กำลังส่งผล...";
 
   try {
-    if (!liff.isLoggedIn()) {
-      liff.login();
-      return;
+    if (!API_URL || API_URL.includes("YOUR-WORKER")) {
+      throw new Error("ยังไม่ได้ตั้งค่า API_URL ใน config.js กรุณาใส่ Worker URL");
     }
 
-    if (!liff.isApiAvailable("sendMessages")) {
-      alert("เบราว์เซอร์นี้ไม่รองรับการส่งข้อความเข้าแชทโดยตรง กรุณาเปิดผ่านแชท LINE");
-      return;
-    }
-
-    // ดึงคะแนนจาก window.finalScore ที่คำนวณไว้ใน finish()
+    const idToken = liff.getIDToken();
     const score = window.finalScore || 0;
-    const totalScore = questions.length;
-    const displayName = profile ? profile.displayName : "ผู้สอบ";
 
-    const textMessage = 
-`ผลการทดสอบวิชาชีพทรัพยากรบุคคล ระดับ 3
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        idToken: idToken,
+        userId: profile ? profile.userId : "",
+        displayName: profile ? profile.displayName : "ผู้สอบ",
+        score: score,
+        total: questions.length
+      })
+    });
 
-ชื่อผู้สอบ: ${displayName}
-คะแนน: ${score}/${totalScore}
-คิดเป็น: ${Math.round((score / totalScore) * 100)}%
-วันที่: ${new Intl.DateTimeFormat("th-TH", { dateStyle: "long", timeStyle: "short", timeZone: "Asia/Bangkok" }).format(new Date())}`;
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "เกิดข้อผิดพลาดจาก Server");
 
-    await liff.sendMessages([
-      {
-        type: "text",
-        text: textMessage
-      }
-    ]);
+    if (statusEl) statusEl.innerText = "ส่งผลเข้าแชทเรียบร้อยแล้ว!";
+    alert("ส่งผลเข้าแชท LINE เรียบร้อยแล้ว!");
+    if (liff.isInClient()) liff.closeWindow();
 
-    alert("ส่งผลเข้าแชทเรียบร้อยแล้ว!");
-    if (liff.isInClient()) {
-      liff.closeWindow();
-    }
   } catch (error) {
-    console.error("LINE Send Error:", error);
+    console.error("Send error:", error);
     if (statusEl) {
       statusEl.innerText = "ส่งไม่สำเร็จ: " + error.message;
       statusEl.classList.remove("hidden");
     }
+  } finally {
+    if (sendBtn) sendBtn.disabled = false;
   }
 }
 
-// ผูก Event Listener
+// Event Listeners
 $("loginBtn").onclick = login;
 $("nextBtn").onclick = () => { if(idx < questions.length - 1){ idx++; render(); } else finish(); };
-$("sendBtn").onclick = sendResultToLineChat; // แก้ไขชื่อฟังก์ชันให้ตรงกัน
-$("closeBtn").onclick = () => { if(liff.isInClient()) liff.closeWindow(); };
+if($("sendBtn")) $("sendBtn").onclick = sendResult;
+if($("closeBtn")) $("closeBtn").onclick = () => { if(liff.isInClient()) liff.closeWindow(); };
 
 init();
