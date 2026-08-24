@@ -107,15 +107,13 @@ async function sendResult() {
   if (statusEl) statusEl.innerText = "กำลังส่งผลเข้าแชท...";
 
   try {
-    // 1. เช็กการ Login
     if (!liff.isLoggedIn()) {
       liff.login();
       return;
     }
 
-    // 2. เช็กว่าเปิดในแชท LINE (In-Client Browser) หรือไม่
     if (!liff.isInClient()) {
-      throw new Error("กรุณาเปิดทำแบบทดสอบผ่านห้องแชทในแอป LINE เท่านั้น จึงจะสามารถส่งผลเข้าแชทได้");
+      throw new Error("กรุณาเปิดทำแบบทดสอบผ่านห้องแชทในแอป LINE เท่านั้น");
     }
 
     const score = window.finalScore || 0;
@@ -130,7 +128,7 @@ async function sendResult() {
 คิดเป็น: ${Math.round((score / totalScore) * 100)}%
 วันที่: ${new Intl.DateTimeFormat("th-TH", { dateStyle: "long", timeStyle: "short", timeZone: "Asia/Bangkok" }).format(new Date())}`;
 
-    // 3. ยิงส่งข้อความโดยตรง (หากติดสิทธิ์ Scope หรือเปิดนอกแชท จะหลุดไปจับที่ catch)
+    // ส่งข้อความตรงๆ โดยไม่ใช้ isApiAvailable
     await liff.sendMessages([
       {
         type: "text",
@@ -145,8 +143,7 @@ async function sendResult() {
   } catch (error) {
     console.error("LINE Send Error:", error);
     if (statusEl) {
-      // แปลงข้อความ error ให้เข้าใจง่าย
-      let msg = error.message;
+      let msg = error.message || "เกิดข้อผิดพลาดในการส่ง";
       if (msg.includes("user declined")) msg = "ผู้ใช้ไม่อนุญาตให้ส่งข้อความ";
       statusEl.innerText = "ส่งไม่สำเร็จ: " + msg;
       statusEl.classList.remove("hidden");
