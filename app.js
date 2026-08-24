@@ -104,16 +104,12 @@ async function sendResult() {
   const sendBtn = $("sendBtn");
   
   if (sendBtn) sendBtn.disabled = true;
-  if (statusEl) statusEl.innerText = "กำลังส่งผลเข้าแชท...";
+  if (statusEl) statusEl.innerText = "กำลังเตรียมส่งผลเข้าแชท...";
 
   try {
     if (!liff.isLoggedIn()) {
       liff.login();
       return;
-    }
-
-    if (!liff.isInClient()) {
-      throw new Error("กรุณาเปิดทำแบบทดสอบผ่านห้องแชทในแอป LINE เท่านั้น");
     }
 
     const score = window.finalScore || 0;
@@ -128,23 +124,33 @@ async function sendResult() {
 คิดเป็น: ${Math.round((score / totalScore) * 100)}%
 วันที่: ${new Intl.DateTimeFormat("th-TH", { dateStyle: "long", timeStyle: "short", timeZone: "Asia/Bangkok" }).format(new Date())}`;
 
-    // ส่งข้อความตรงๆ โดยไม่ใช้ isApiAvailable
-    await liff.sendMessages([
-      {
-        type: "text",
-        text: textMessage
-      }
-    ]);
+    // 1. ถ้าอยู่ในแชท LINE ให้ลองส่งเข้าแชทปัจจุบันก่อน
+    if (liff.isInClient() && liff.isApiAvailable("sendMessages")) {
+      await liff.sendMessages([{ type: "text", text: textMessage }]);
+      if (statusEl) statusEl.innerText = "ส่งผลเข้าแชทเรียบร้อยแล้ว!";
+      alert("ส่งผลเข้าแชท LINE เรียบร้อยแล้ว!");
+      liff.closeWindow();
+      return;
+    }
 
-    if (statusEl) statusEl.innerText = "ส่งผลเข้าแชทเรียบร้อยแล้ว!";
-    alert("ส่งผลเข้าแชท LINE เรียบร้อยแล้ว!");
-    liff.closeWindow();
+    // 2. ถ้าส่งตรงไม่ได้ (เช่น เปิดนอกแชท) ให้เปิดหน้าเลือกห้องแชทแทน
+    if (liff.isApiAvailable("shareTargetPicker")) {
+      const res = await liff.shareTargetPicker([{ type: "text", text: textMessage }]);
+      if (res) {
+        if (statusEl) statusEl.innerText = "ส่งผลเข้าแชทเรียบร้อยแล้ว!";
+        alert("ส่งผลเข้าแชทเรียบร้อยแล้ว!");
+        if (liff.isInClient()) liff.closeWindow();
+      } else {
+        if (statusEl) statusEl.innerText = "ยกเลิกการส่งข้อความ";
+      }
+    } else {
+      throw new Error("ฟังก์ชันส่งข้อความไม่รองรับบนอุปกรณ์นี้");
+    }
 
   } catch (error) {
     console.error("LINE Send Error:", error);
     if (statusEl) {
       let msg = error.message || "เกิดข้อผิดพลาดในการส่ง";
-      if (msg.includes("user declined")) msg = "ผู้ใช้ไม่อนุญาตให้ส่งข้อความ";
       statusEl.innerText = "ส่งไม่สำเร็จ: " + msg;
       statusEl.classList.remove("hidden");
     }
