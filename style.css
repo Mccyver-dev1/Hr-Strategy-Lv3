@@ -1,21 +1,191 @@
-/* คลาสสำคัญสำหรับซ่อน/แสดงผล */
+/* --- Global Styles --- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  background-color: #f4f6f8;
+  color: #333;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 15px;
+}
+
+.container {
+  max-width: 480px;
+  margin: 0 auto;
+  width: 100%;
+  flex: 1;
+}
+
+/* คลาสสำคัญที่สุดสำหรับซ่อน/แสดงผล */
 .hidden {
   display: none !important;
 }
 
-/* ปรับขนาดโลโก้หน้าแรกไม่ให้ขยายเต็มจอ */
-.logo {
-  max-width: 180px;
-  height: auto;
-  margin: 0 auto 15px auto;
-  display: block;
+/* --- Card Base --- */
+.card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
 }
 
 .center {
   text-align: center;
 }
 
-/* เพิ่มเติมสไตล์หน้า Results */
+/* --- Login Section --- */
+.logo {
+  max-width: 140px;
+  height: auto;
+  margin: 10px auto 20px auto;
+  display: block;
+}
+
+h1 {
+  font-size: 20px;
+  color: #111;
+  margin-bottom: 8px;
+}
+
+.level {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+/* --- Profile Section --- */
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.profile img, 
+#avatar {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background-color: #eee;
+}
+
+/* --- Quiz Section --- */
+.progress {
+  width: 100%;
+  height: 6px;
+  background: #eee;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress span {
+  display: block;
+  height: 100%;
+  background: #06c755;
+  width: 0%;
+  transition: width 0.3s;
+}
+
+#question {
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 15px 0;
+  color: #222;
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.choices button, 
+.choices label,
+.choice-item {
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 14px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.choices button:hover,
+.choices button:active {
+  border-color: #06c755;
+  background-color: #f0fdf4;
+}
+
+/* --- Buttons --- */
+button.primary {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  border: none;
+  background-color: #06c755;
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+button.primary:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+button.secondary {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  background-color: #fff;
+  color: #555;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+/* --- Text Utility --- */
+.muted {
+  color: #888;
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+.tiny {
+  font-size: 11px;
+  color: #aaa;
+  margin-top: 5px;
+}
+
+.error {
+  color: #ff4d4f;
+  background: #ffe6e6;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-size: 13px;
+}
+
+/* --- Result Section --- */
 .result-header { display: flex; justify-content: center; margin-bottom: 20px; }
 .status-badge-wrap { display: flex; align-items: center; gap: 15px; }
 .status-icon { width: 60px; height: 60px; border-radius: 50%; background: #e6f9f0; display: flex; align-items: center; justify-content: center; font-size: 30px; }
@@ -26,7 +196,7 @@
 
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
 .stat-card { background: #f8f9fa; border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 12px; }
-.stat-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.stat-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
 .stat-icon.green { color: #06c755; background: #e6f9f0; }
 .stat-icon.red { color: #ff4d4f; background: #ffe6e6; }
 .stat-icon.blue { color: #1890ff; background: #e6f7ff; }
@@ -44,3 +214,12 @@
 
 .full-width { width: 100%; margin-top: 8px; }
 .text-center { text-align: center; }
+
+/* --- Footer --- */
+footer {
+  text-align: center;
+  font-size: 12px;
+  color: #aaa;
+  padding: 10px 0;
+  margin-top: auto;
+}
