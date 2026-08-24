@@ -102,39 +102,48 @@ function finish(){
 async function sendResult() {
   const statusEl = $("sendStatus") || $("errorBox");
   const sendBtn = $("sendBtn");
-  
+
   if (sendBtn) sendBtn.disabled = true;
-  if (statusEl) statusEl.innerText = "กำลังส่งผล...";
+  if (statusEl) statusEl.innerText = "กำลังส่งผลเข้าแชท...";
 
   try {
-    if (!API_URL || API_URL.includes("YOUR-WORKER")) {
-      throw new Error("ยังไม่ได้ตั้งค่า API_URL ใน config.js กรุณาใส่ Worker URL");
+    // 1. เช็กว่าล็อกอินหรือยัง
+    if (!liff.isLoggedIn()) {
+      liff.login();
+      return;
     }
 
-    const idToken = liff.getIDToken();
+    // 2. เช็กว่าเบราว์เซอร์/แชทรองรับส่งข้อความหรือไม่
+    if (!liff.isApiAvailable("sendMessages")) {
+      throw new Error("ระบบไม่รองรับการส่งข้อความผ่านเบราว์เซอร์นี้ กรุณาเปิดทำแบบทดสอบในแชท LINE");
+    }
+
     const score = window.finalScore || 0;
+    const totalScore = questions.length;
+    const displayName = profile ? profile.displayName : "ผู้สอบ";
 
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        idToken: idToken,
-        userId: profile ? profile.userId : "",
-        displayName: profile ? profile.displayName : "ผู้สอบ",
-        score: score,
-        total: questions.length
-      })
-    });
+    const textMessage = 
+`ผลการทดสอบวิชาชีพทรัพยากรบุคคล ระดับ 3
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "เกิดข้อผิดพลาดจาก Server");
+ชื่อผู้สอบ: ${displayName}
+คะแนน: ${score}/${totalScore}
+คิดเป็น: ${Math.round((score / totalScore) * 100)}%
+วันที่: ${new Intl.DateTimeFormat("th-TH", { dateStyle: "long", timeStyle: "short", timeZone: "Asia/Bangkok" }).format(new Date())}`;
+
+    // 3. ส่งข้อความเข้าแชท LINE ผ่าน LIFF SDK Direct
+    await liff.sendMessages([
+      {
+        type: "text",
+        text: textMessage
+      }
+    ]);
 
     if (statusEl) statusEl.innerText = "ส่งผลเข้าแชทเรียบร้อยแล้ว!";
     alert("ส่งผลเข้าแชท LINE เรียบร้อยแล้ว!");
     if (liff.isInClient()) liff.closeWindow();
 
   } catch (error) {
-    console.error("Send error:", error);
+    console.error("LINE Send Error:", error);
     if (statusEl) {
       statusEl.innerText = "ส่งไม่สำเร็จ: " + error.message;
       statusEl.classList.remove("hidden");
