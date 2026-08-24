@@ -102,20 +102,20 @@ function finish(){
 async function sendResult() {
   const statusEl = $("sendStatus") || $("errorBox");
   const sendBtn = $("sendBtn");
-
+  
   if (sendBtn) sendBtn.disabled = true;
   if (statusEl) statusEl.innerText = "กำลังส่งผลเข้าแชท...";
 
   try {
-    // 1. เช็กว่าล็อกอินหรือยัง
+    // 1. เช็กการ Login
     if (!liff.isLoggedIn()) {
       liff.login();
       return;
     }
 
-    // 2. เช็กว่าเบราว์เซอร์/แชทรองรับส่งข้อความหรือไม่
-    if (!liff.isApiAvailable("sendMessages")) {
-      throw new Error("ระบบไม่รองรับการส่งข้อความผ่านเบราว์เซอร์นี้ กรุณาเปิดทำแบบทดสอบในแชท LINE");
+    // 2. เช็กว่าเปิดในแชท LINE (In-Client Browser) หรือไม่
+    if (!liff.isInClient()) {
+      throw new Error("กรุณาเปิดทำแบบทดสอบผ่านห้องแชทในแอป LINE เท่านั้น จึงจะสามารถส่งผลเข้าแชทได้");
     }
 
     const score = window.finalScore || 0;
@@ -130,7 +130,7 @@ async function sendResult() {
 คิดเป็น: ${Math.round((score / totalScore) * 100)}%
 วันที่: ${new Intl.DateTimeFormat("th-TH", { dateStyle: "long", timeStyle: "short", timeZone: "Asia/Bangkok" }).format(new Date())}`;
 
-    // 3. ส่งข้อความเข้าแชท LINE ผ่าน LIFF SDK Direct
+    // 3. ยิงส่งข้อความโดยตรง (หากติดสิทธิ์ Scope หรือเปิดนอกแชท จะหลุดไปจับที่ catch)
     await liff.sendMessages([
       {
         type: "text",
@@ -140,12 +140,15 @@ async function sendResult() {
 
     if (statusEl) statusEl.innerText = "ส่งผลเข้าแชทเรียบร้อยแล้ว!";
     alert("ส่งผลเข้าแชท LINE เรียบร้อยแล้ว!");
-    if (liff.isInClient()) liff.closeWindow();
+    liff.closeWindow();
 
   } catch (error) {
     console.error("LINE Send Error:", error);
     if (statusEl) {
-      statusEl.innerText = "ส่งไม่สำเร็จ: " + error.message;
+      // แปลงข้อความ error ให้เข้าใจง่าย
+      let msg = error.message;
+      if (msg.includes("user declined")) msg = "ผู้ใช้ไม่อนุญาตให้ส่งข้อความ";
+      statusEl.innerText = "ส่งไม่สำเร็จ: " + msg;
       statusEl.classList.remove("hidden");
     }
   } finally {
