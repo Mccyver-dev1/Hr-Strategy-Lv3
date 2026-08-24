@@ -11,23 +11,59 @@ const questions = [
   a:["เพิ่มจำนวนพนักงานตามจำนวนที่หน่วยงานร้องขอทั้งหมด","วิเคราะห์ปริมาณงาน ความต้องการกำลังคน และกำลังคนที่มีอยู่","หยุดการรับพนักงานใหม่จนกว่าจะเห็นปริมาณงานจริง","ใช้จำนวนพนักงานของปีที่ผ่านมาเป็นเป้าหมายของปีถัดไป"],c:1}
 ];
 
-let profile=null, idx=0, answers=[];
+let profile=null,idx=0,answers=[];
 
 const $=id=>document.getElementById(id);
 function show(id){["login","quiz","result"].forEach(x=>$(x).classList.toggle("hidden",x!==id));}
+function showError(title, detail){
+  const box=$("errorBox");
+  box.innerHTML=`<strong>${escapeHtml(title)}</strong>${escapeHtml(detail)}`;
+  box.classList.remove("hidden");
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
 
 async function init(){
+  $("liffIdText").textContent=LIFF_ID;
+  if(typeof liff==="undefined"){
+    showError("โหลด LINE LIFF ไม่สำเร็จ","ไม่พบ LIFF SDK กรุณาตรวจสอบอินเทอร์เน็ตหรือการโหลด https://static.line-scdn.net/liff/edge/2/sdk.js");
+    return;
+  }
   try{
     await liff.init({liffId:LIFF_ID});
-    if(!liff.isLoggedIn()) return;
-    await start();
-  }catch(e){console.error(e); alert("ไม่สามารถเริ่มระบบ LINE ได้: "+e.message);}
+    if(liff.isLoggedIn()) await start();
+  }catch(e){
+    console.error("LIFF init error",e);
+    showError("เกิดข้อผิดพลาดในการเชื่อมต่อ LINE",
+      (e&&e.message?e.message:"Unknown error")+
+      " | ตรวจสอบ LIFF Endpoint URL ใน LINE Developers ให้ตรงกับ URL เว็บไซต์นี้ทุกตัวอักษร");
+  }
+}
+
+async function login(){
+  $("loginBtn").disabled=true;
+  $("errorBox").classList.add("hidden");
+  try{
+    if(!liff.isLoggedIn()){
+      liff.login({redirectUri:LIFF_ENDPOINT_URL});
+    }else{
+      await start();
+    }
+  }catch(e){
+    console.error("LIFF login error",e);
+    $("loginBtn").disabled=false;
+    showError("เข้าสู่ระบบ LINE ไม่สำเร็จ",e&&e.message?e.message:"Unknown error");
+  }
 }
 async function start(){
-  profile=await liff.getProfile();
-  $("name").textContent=profile.displayName;
-  $("avatar").src=profile.pictureUrl||"";
-  show("quiz"); render();
+  try{
+    profile=await liff.getProfile();
+    $("name").textContent=profile.displayName;
+    $("avatar").src=profile.pictureUrl||"";
+    show("quiz");render();
+  }catch(e){
+    show("login");
+    showError("อ่านข้อมูลบัญชี LINE ไม่สำเร็จ",e&&e.message?e.message:"Unknown error");
+  }
 }
 function render(){
   const x=questions[idx];
@@ -36,6 +72,7 @@ function render(){
   $("question").textContent=x.q;
   $("choices").innerHTML="";
   $("nextBtn").disabled=answers[idx]===undefined;
+  $("nextBtn").textContent=idx===questions.length-1?"ส่งคำตอบ":"ข้อต่อไป";
   x.a.forEach((t,i)=>{
     const b=document.createElement("button");
     b.className="choice"+(answers[idx]===i?" selected":"");
@@ -43,20 +80,22 @@ function render(){
     b.onclick=()=>{answers[idx]=i;render();};
     $("choices").appendChild(b);
   });
-  $("nextBtn").textContent=idx===questions.length-1?"ส่งคำตอบ":"ข้อต่อไป";
 }
 function finish(){
   const score=answers.reduce((s,v,i)=>s+(v===questions[i].c?1:0),0);
+  window.finalScore=score;
   $("score").textContent=`${score} / ${questions.length}`;
   $("resultDetail").textContent=`คิดเป็น ${Math.round(score/questions.length*100)}%`;
   show("result");
-  window.finalScore=score;
 }
 async function sendResult(){
   const score=window.finalScore;
+  if(!API_URL || API_URL.includes("YOUR-WORKER")){
+    $("sendStatus").textContent="ยังไม่ได้ตั้งค่า Backend สำหรับส่งผล LINE กรุณาตั้ง API_URL ใน config.js";
+    return;
+  }
   const payload={idToken:await liff.getIDToken(),userId:profile.userId,displayName:profile.displayName,score,total:questions.length,answers};
-  $("sendBtn").disabled=true;
-  $("sendStatus").textContent="กำลังส่งผล...";
+  $("sendBtn").disabled=true;$("sendStatus").textContent="กำลังส่งผล...";
   try{
     const r=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     const data=await r.json();
@@ -64,11 +103,11 @@ async function sendResult(){
     $("sendStatus").textContent=data.message||"ส่งผลเรียบร้อยแล้ว";
     if(liff.isInClient()) setTimeout(()=>liff.closeWindow(),1200);
   }catch(e){
-    console.error(e); $("sendBtn").disabled=false;
+    $("sendBtn").disabled=false;
     $("sendStatus").textContent="ส่งไม่สำเร็จ: "+e.message;
   }
 }
-$("loginBtn").onclick=()=>liff.login();
+$("loginBtn").onclick=login;
 $("nextBtn").onclick=()=>{if(idx<questions.length-1){idx++;render();}else finish();};
 $("sendBtn").onclick=sendResult;
 $("closeBtn").onclick=()=>{if(liff.isInClient())liff.closeWindow();};

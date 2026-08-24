@@ -1,20 +1,25 @@
 <!doctype html>
 <html lang="th">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>HR Professional Level 3</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#06c755">
+<title>HR Professional Level 3</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
 <main class="container">
   <section id="login" class="card center">
     <img class="logo" src="logo.png" alt="Siam HRBP">
     <h1>แบบทดสอบความรู้วิชาชีพทรัพยากรบุคคล</h1>
-    <p>ระดับ 3 · 5 ข้อ</p>
+    <p class="level">ระดับ 3</p>
+
+    <div id="errorBox" class="error hidden"></div>
+
     <button id="loginBtn" class="primary">เข้าสู่ระบบด้วย LINE</button>
     <p class="muted">ระบบนี้อนุญาตให้เข้าสอบผ่านบัญชี LINE เท่านั้น</p>
+    <p class="tiny">LIFF ID: <span id="liffIdText"></span></p>
   </section>
 
   <section id="quiz" class="card hidden">
@@ -39,6 +44,7 @@
     <p id="sendStatus" class="muted"></p>
   </section>
 </main>
+
 <footer>@2024 Siam-HRBP Soft</footer>
 <script src="config.js"></script>
 <script src="app.js"></script>

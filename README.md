@@ -46,3 +46,16 @@ Deploy `worker.js` แล้วตั้ง Variables/Secrets:
 ห้ามใส่ Channel Secret หรือ Channel Access Token ใน GitHub Pages เพราะ repository และ JavaScript ฝั่งผู้ใช้สามารถถูกเปิดดูได้
 
 ระบบตัวอย่างนี้ส่งผลกลับไปยัง userId ของผู้สอบเองผ่าน Official Account เมื่อผู้สอบเพิ่ม Official Account เป็นเพื่อนแล้ว
+
+
+## แก้ปัญหา LIFF ขึ้น "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ"
+
+จาก URL ในเว็บตัวอย่าง หากเว็บไซต์คือ:
+`https://mccyver-dev1.github.io/Hr-Strategy-Lv3/`
+
+ต้องตั้ง LIFF Endpoint URL ใน LINE Developers เป็น URL เดียวกัน:
+`https://mccyver-dev1.github.io/Hr-Strategy-Lv3/`
+
+ห้ามตั้งเป็น URL ของ repository อื่น และควรเปิดด้วย HTTPS
+
+หากยังมีปัญหา เวอร์ชันนี้จะแสดงข้อความ error จริงบนหน้าเว็บ เพื่อระบุว่าเกิดจาก LIFF ID, Endpoint URL, SDK หรือการ Login
