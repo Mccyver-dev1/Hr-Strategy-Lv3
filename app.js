@@ -1,20 +1,9 @@
-const questions = [
-  {q:"องค์กรพบว่าพนักงานใหม่มีอัตราการลาออกสูงภายใน 6 เดือนแรก ฝ่าย HR ต้องการหาสาเหตุเชิงระบบก่อนกำหนดมาตรการแก้ไข วิธีใดเหมาะสมที่สุด",
-   a:["วิเคราะห์ข้อมูลการลาออกร่วมกับผลสัมภาษณ์พนักงานและข้อมูลการเริ่มงาน","เพิ่มค่าตอบแทนพนักงานใหม่ทุกตำแหน่งทันที","กำหนดให้หัวหน้างานประเมินพนักงานใหม่ทุกสัปดาห์","ลดระยะเวลาทดลองงานเพื่อให้พนักงานผ่านการประเมินเร็วขึ้น"],c:0},
-  {q:"ในการคัดเลือกผู้สมัคร ฝ่าย HR ต้องการลดความลำเอียงจากการสัมภาษณ์ระหว่างผู้สมัครหลายคน วิธีใดเป็นแนวปฏิบัติที่เหมาะสมที่สุด",
-   a:["ให้ผู้สัมภาษณ์แต่ละคนถามคำถามตามความสนใจของตนเอง","ใช้คำถามและเกณฑ์การให้คะแนนที่กำหนดไว้ล่วงหน้าสำหรับผู้สมัครทุกคน","ให้ผู้บริหารเลือกผู้สมัครจากความประทับใจหลังสัมภาษณ์","เลือกผู้สมัครที่มีประสบการณ์ทำงานมากที่สุดเสมอ"],c:1},
-  {q:"หัวหน้างานแจ้งว่า พนักงานคนหนึ่งมีผลงานต่ำกว่าเป้าหมายอย่างต่อเนื่อง HR ควรดำเนินการใดก่อนเป็นลำดับสำคัญ",
-   a:["พิจารณาปรับลดค่าตอบแทนทันที","ตรวจสอบเป้าหมาย หลักฐานผลงาน และปัจจัยที่ส่งผลต่อการปฏิบัติงาน","ย้ายพนักงานไปแผนกอื่นโดยไม่ต้องประเมินเพิ่มเติม","จัดอบรมทักษะเพิ่มเติมทันทีโดยไม่วิเคราะห์สาเหตุ"],c:1},
-  {q:"องค์กรต้องการประเมินประสิทธิผลของโครงการฝึกอบรมด้านการบริการลูกค้า ตัวชี้วัดใดสะท้อนการนำความรู้ไปใช้ในการทำงานได้ดีกว่าการวัดเพียงจำนวนผู้เข้าอบรม",
-   a:["จำนวนพนักงานที่ลงทะเบียนเข้าร่วมอบรม","จำนวนชั่วโมงที่วิทยากรใช้ในการสอน","ผลการประเมินพฤติกรรมการให้บริการหลังนำความรู้ไปใช้","จำนวนเอกสารประกอบการอบรมที่แจกให้พนักงาน"],c:2},
-  {q:"ฝ่าย HR ต้องการวางแผนอัตรากำลังสำหรับปีถัดไป โดยหน่วยงานธุรกิจคาดว่าจะเพิ่มปริมาณงานอย่างมีนัยสำคัญ ขั้นตอนใดควรเป็นพื้นฐานสำคัญของการวางแผน",
-   a:["เพิ่มจำนวนพนักงานตามจำนวนที่หน่วยงานร้องขอทั้งหมด","วิเคราะห์ปริมาณงาน ความต้องการกำลังคน และกำลังคนที่มีอยู่","หยุดการรับพนักงานใหม่จนกว่าจะเห็นปริมาณงานจริง","ใช้จำนวนพนักงานของปีที่ผ่านมาเป็นเป้าหมายของปีถัดไป"],c:1}
-];
-
 let profile = null, idx = 0, answers = [];
+let startTime = null, durationSeconds = 0;
 
 const $ = id => document.getElementById(id);
 function show(id){ ["login","quiz","result"].forEach(x => $(x).classList.toggle("hidden", x !== id)); }
+
 function showError(title, detail){
   const box = $("errorBox");
   if(box){
@@ -28,12 +17,8 @@ async function init(){
   const liffId = (typeof LIFF_ID !== "undefined") ? LIFF_ID : "";
   if($("liffIdText")) $("liffIdText").textContent = liffId;
 
-  if(!liffId || liffId.includes("YOUR_LIFF_ID")){
+  if(!liffId){
     showError("ตั้งค่าไม่สมบูรณ์", "ไม่พบค่า LIFF_ID ใน config.js");
-    return;
-  }
-  if(typeof liff === "undefined"){
-    showError("โหลด LINE LIFF ไม่สำเร็จ", "ไม่พบ LIFF SDK กรุณาตรวจสอบอินเทอร์เน็ต");
     return;
   }
   try{
@@ -47,7 +32,6 @@ async function init(){
 
 async function login(){
   $("loginBtn").disabled = true;
-  if($("errorBox")) $("errorBox").classList.add("hidden");
   try{
     if(!liff.isLoggedIn()){
       liff.login({redirectUri: typeof LIFF_ENDPOINT_URL !== "undefined" ? LIFF_ENDPOINT_URL : window.location.href});
@@ -55,7 +39,6 @@ async function login(){
       await start();
     }
   }catch(e){
-    console.error("LIFF login error", e);
     $("loginBtn").disabled = false;
     showError("เข้าสู่ระบบ LINE ไม่สำเร็จ", e && e.message ? e.message : "Unknown error");
   }
@@ -66,6 +49,7 @@ async function start(){
     profile = await liff.getProfile();
     $("name").textContent = profile.displayName;
     $("avatar").src = profile.pictureUrl || "";
+    startTime = new Date(); // เริ่มจับเวลา
     show("quiz");
     render();
   }catch(e){
@@ -82,6 +66,7 @@ function render(){
   $("choices").innerHTML = "";
   $("nextBtn").disabled = answers[idx] === undefined;
   $("nextBtn").textContent = idx === questions.length - 1 ? "ส่งคำตอบ" : "ข้อต่อไป";
+  
   x.a.forEach((t, i) => {
     const b = document.createElement("button");
     b.className = "choice" + (answers[idx] === i ? " selected" : "");
@@ -92,15 +77,65 @@ function render(){
 }
 
 function finish(){
-  const score = answers.reduce((s, v, i) => s + (v === questions[i].c ? 1 : 0), 0);
-  window.finalScore = score;
-  $("score").textContent = `${score} / ${questions.length}`;
-  $("resultDetail").textContent = `คิดเป็น ${Math.round(score/questions.length*100)}%`;
+  const endTime = new Date();
+  durationSeconds = Math.floor((endTime - startTime) / 1000);
+  
+  let rightCount = 0;
+  const gridContainer = $("gridOverview");
+  gridContainer.innerHTML = "";
+
+  questions.forEach((q, i) => {
+    const isCorrect = answers[i] === q.c;
+    if(isCorrect) rightCount++;
+
+    const item = document.createElement("div");
+    item.className = `grid-item ${isCorrect ? 'correct' : 'wrong'}`;
+    item.textContent = i + 1;
+    gridContainer.appendChild(item);
+  });
+
+  const total = questions.length;
+  const wrongCount = total - rightCount;
+  const percent = Math.round((rightCount / total) * 100);
+
+  window.finalResult = {
+    score: rightCount,
+    total: total,
+    percent: percent,
+    durationStr: formatDuration(durationSeconds)
+  };
+
+  // อัปเดต UI หน้า Result
+  $("scoreBanner").textContent = `${rightCount}/${total}`;
+  $("rightAnswers").textContent = `${rightCount}/${total}`;
+  $("wrongAnswers").textContent = `${wrongCount}/${total}`;
+  $("overviewPercent").textContent = `${percent}%`;
+  $("durationTime").textContent = formatDuration(durationSeconds);
+  $("resultProgressBar").style.width = `${percent}%`;
+
+  const passStatus = $("passStatus");
+  if(percent >= 60) {
+    passStatus.textContent = "PASSED";
+    passStatus.className = "pass-tag";
+    $("statusIcon").textContent = "👍";
+  } else {
+    passStatus.textContent = "FAILED";
+    passStatus.className = "pass-tag failed";
+    $("statusIcon").textContent = "👎";
+  }
+
   show("result");
 }
 
+function formatDuration(sec) {
+  const hrs = Math.floor(sec / 3600);
+  const mins = Math.floor((sec % 3600) / 60);
+  const secs = sec % 60;
+  return `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+}
+
 async function sendResult() {
-  const statusEl = $("sendStatus") || $("errorBox");
+  const statusEl = $("sendStatus");
   const sendBtn = $("sendBtn");
   
   if (sendBtn) sendBtn.disabled = true;
@@ -112,59 +147,46 @@ async function sendResult() {
       return;
     }
 
-    const score = window.finalScore || 0;
-    const totalScore = questions.length;
+    const res = window.finalResult;
     const displayName = profile ? profile.displayName : "ผู้สอบ";
 
     const textMessage = 
-`ผลการทดสอบวิชาชีพทรัพยากรบุคคล ระดับ 3
+`ผลการทดสอบวิชาชีพทรัพยากรบุคคล ระดับ 3 (50 ข้อ)
 
 ชื่อผู้สอบ: ${displayName}
-คะแนน: ${score}/${totalScore}
-คิดเป็น: ${Math.round((score / totalScore) * 100)}%
+สถานะ: ${res.percent >= 60 ? 'PASSED (ผ่าน)' : 'FAILED (ไม่ผ่าน)'}
+คะแนนที่ได้: ${res.score}/${res.total}
+คิดเป็น: ${res.percent}%
+เวลาที่ใช้: ${res.durationStr}
 วันที่: ${new Intl.DateTimeFormat("th-TH", { dateStyle: "long", timeStyle: "short", timeZone: "Asia/Bangkok" }).format(new Date())}`;
 
     const msgPayload = [{ type: "text", text: textMessage }];
 
-    // 1. พยายามยิงเข้าแชทปัจจุบันก่อน
     try {
       await liff.sendMessages(msgPayload);
       if (statusEl) statusEl.innerText = "ส่งผลเข้าแชทเรียบร้อยแล้ว!";
       alert("ส่งผลเข้าแชท LINE เรียบร้อยแล้ว!");
       if (liff.isInClient()) liff.closeWindow();
       return;
-    } catch (sendErr) {
-      console.log("sendMessages ไม่ผ่าน ลองใช้ shareTargetPicker", sendErr);
-    }
+    } catch (e) { console.log("sendMessages fallback to shareTargetPicker", e); }
 
-    // 2. ถ้าส่งตรงไม่ได้ (เช่น เปิดนอกแชท) ให้เด้งหน้าเลือกเพื่อน/ห้องแชท
     if (liff.shareTargetPicker) {
-      const res = await liff.shareTargetPicker(msgPayload);
-      if (res) {
+      const shareRes = await liff.shareTargetPicker(msgPayload);
+      if (shareRes) {
         if (statusEl) statusEl.innerText = "ส่งผลเข้าแชทเรียบร้อยแล้ว!";
         alert("ส่งผลเข้าแชทเรียบร้อยแล้ว!");
         if (liff.isInClient()) liff.closeWindow();
       } else {
         if (statusEl) statusEl.innerText = "ยกเลิกการส่งข้อความ";
       }
-    } else {
-      throw new Error("อุปกรณ์หรือเบราว์เซอร์นี้ไม่รองรับการส่งข้อความ");
     }
-
   } catch (error) {
-    console.error("LINE Send Error:", error);
-    if (statusEl) {
-      let msg = error.message || "เกิดข้อผิดพลาดในการส่ง";
-      if (msg.includes("user declined")) msg = "ผู้ใช้ยกเลิกการส่งข้อความ";
-      statusEl.innerText = "ส่งไม่สำเร็จ: " + msg;
-      statusEl.classList.remove("hidden");
-    }
+    if (statusEl) statusEl.innerText = "ส่งไม่สำเร็จ: " + error.message;
   } finally {
     if (sendBtn) sendBtn.disabled = false;
   }
 }
 
-// Event Listeners
 $("loginBtn").onclick = login;
 $("nextBtn").onclick = () => { if(idx < questions.length - 1){ idx++; render(); } else finish(); };
 if($("sendBtn")) $("sendBtn").onclick = sendResult;

@@ -6,16 +6,16 @@
 <meta name="theme-color" content="#06c755">
 <title>HR Professional Level 3</title>
 <link rel="stylesheet" href="style.css">
-<!-- โหลด SDK และ Config ก่อนเสมอ -->
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="config.js"></script>
+<script src="questions.js"></script>
 </head>
 <body>
 <main class="container">
   <section id="login" class="card center">
     <img class="logo" src="logo.png" alt="Siam HRBP">
     <h1>แบบทดสอบความรู้วิชาชีพทรัพยากรบุคคล</h1>
-    <p class="level">ระดับ 3</p>
+    <p class="level">ระดับ 3 (50 ข้อ)</p>
 
     <div id="errorBox" class="error hidden"></div>
 
@@ -36,20 +36,66 @@
     <button id="nextBtn" class="primary" disabled>ข้อต่อไป</button>
   </section>
 
-  <section id="result" class="card center hidden">
-    <div class="resultIcon">✓</div>
-    <h1>ทำแบบทดสอบเสร็จแล้ว</h1>
-    <div id="score" class="score"></div>
-    <p id="resultDetail"></p>
-    <button id="sendBtn" class="primary">ส่งผลเข้าแชท LINE</button>
-    <button id="closeBtn" class="secondary">ปิดหน้าต่าง</button>
-    <p id="sendStatus" class="muted"></p>
+  <!-- UI หน้าผลลัพธ์ใหม่ตามรูปตัวอย่าง -->
+  <section id="result" class="card hidden">
+    <div class="result-header">
+      <div class="status-badge-wrap">
+        <div id="statusIcon" class="status-icon">👍</div>
+        <div class="status-text-wrap">
+          <span id="passStatus" class="pass-tag">PASSED</span>
+          <div id="scoreBanner" class="score-banner">0/50</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon green">👍</div>
+        <div class="stat-info">
+          <strong id="rightAnswers">0/50</strong>
+          <small>Right answers</small>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red">👎</div>
+        <div class="stat-info">
+          <strong id="wrongAnswers">0/50</strong>
+          <small>Wrong answers</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="progress-bar-wrap">
+      <div id="resultProgressBar" class="result-progress-bar"></div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon blue">%</div>
+        <div class="stat-info">
+          <strong id="overviewPercent">0%</strong>
+          <small>Overview</small>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue">⏰</div>
+        <div class="stat-info">
+          <strong id="durationTime">00:00:00</strong>
+          <small>Duration</small>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="overview-title">Overview</h3>
+    <div id="gridOverview" class="grid-overview"></div>
+
+    <button id="sendBtn" class="primary full-width">ส่งผลเข้าแชท LINE</button>
+    <button id="closeBtn" class="secondary full-width">ปิดหน้าต่าง</button>
+    <p id="sendStatus" class="muted text-center"></p>
   </section>
 </main>
 
 <footer>@2024 Siam-HRBP Soft</footer>
-<!-- โหลด Logic ล่างสุด -->
-<!-- เปลี่ยนจาก src="app.js" เป็นแบบนี้ -->
-<script src="app.js?v=1.0.1"></script>
+<script src="app.js?v=1.0.3"></script>
 </body>
 </html>
