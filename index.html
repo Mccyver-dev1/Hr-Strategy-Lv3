@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>HR Professional Level 3</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+<main class="container">
+  <section id="login" class="card center">
+    <img class="logo" src="logo.png" alt="Siam HRBP">
+    <h1>แบบทดสอบความรู้วิชาชีพทรัพยากรบุคคล</h1>
+    <p>ระดับ 3 · 5 ข้อ</p>
+    <button id="loginBtn" class="primary">เข้าสู่ระบบด้วย LINE</button>
+    <p class="muted">ระบบนี้อนุญาตให้เข้าสอบผ่านบัญชี LINE เท่านั้น</p>
+  </section>
+
+  <section id="quiz" class="card hidden">
+    <div class="profile">
+      <img id="avatar" alt="">
+      <div><strong id="name"></strong><small>ผู้เข้าสอบ</small></div>
+    </div>
+    <div class="progress"><span id="progressBar"></span></div>
+    <div id="progressText" class="muted"></div>
+    <h2 id="question"></h2>
+    <div id="choices" class="choices"></div>
+    <button id="nextBtn" class="primary" disabled>ข้อต่อไป</button>
+  </section>
+
+  <section id="result" class="card center hidden">
+    <div class="resultIcon">✓</div>
+    <h1>ทำแบบทดสอบเสร็จแล้ว</h1>
+    <div id="score" class="score"></div>
+    <p id="resultDetail"></p>
+    <button id="sendBtn" class="primary">ส่งผลเข้าแชท LINE</button>
+    <button id="closeBtn" class="secondary">ปิดหน้าต่าง</button>
+    <p id="sendStatus" class="muted"></p>
+  </section>
+</main>
+<footer>@2024 Siam-HRBP Soft</footer>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
