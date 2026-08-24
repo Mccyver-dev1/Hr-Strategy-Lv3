@@ -1,66 +1,99 @@
-// Cloudflare Worker
-// Secrets ที่ต้องตั้งใน Worker:
-// LINE_CHANNEL_ACCESS_TOKEN
-// LINE_CHANNEL_SECRET
-//
-// API นี้รับผลสอบจากหน้าเว็บ ตรวจสอบ LINE ID Token
-// และส่งผลเข้า LINE แบบ push message ถึง Official Account/ผู้ใช้ที่กำหนด
-//
-// สำคัญ: LINE Messaging API ไม่สามารถส่ง push message ไปยัง "ชื่อบัญชี"
-// โดยตรงได้ ต้องใช้ userId ของผู้รับ หรือกลุ่ม/ห้องที่ LINE API รองรับ
-//
-// สำหรับแชทส่วนตัว: ให้ผู้สอบเพิ่ม Official Account เป็นเพื่อน
-// แล้ว backend จะส่งผลกลับไปยัง userId ของผู้สอบเอง
+// Cloudflare Worker (worker.js)
+// Secrets/Variables ที่ต้องตั้งค่าใน Cloudflare Worker Dashboard:
+// 1. LINE_CHANNEL_ID
+// 2. LINE_CHANNEL_ACCESS_TOKEN
+// 3. LINE_CHANNEL_SECRET (ถ้ามี)
 
 export default {
   async fetch(request, env) {
+    // 1. จัดการ CORS Preflight Request (OPTIONS)
     if (request.method === "OPTIONS") {
-      return new Response(null,{headers:cors()});
+      return new Response(null, { 
+        status: 204, 
+        headers: getCorsHeaders() 
+      });
     }
-    if (request.method !== "POST") return json({error:"Method not allowed"},405);
+
+    // 2. กรองเฉพาะ POST Method
+    if (request.method !== "POST") {
+      return jsonResponse({ error: "Method not allowed" }, 405);
+    }
 
     try {
-      const body=await request.json();
-      if(!body.idToken || !body.score || !body.total || !body.userId)
-        return json({error:"ข้อมูลไม่ครบ"},400);
+      const body = await request.json();
 
-      // ตรวจสอบ ID Token กับ LINE
-      const verify=new URLSearchParams();
-      verify.set("id_token",body.idToken);
-      verify.set("client_id",env.LINE_CHANNEL_ID);
+      // ตรวจสอบความถูกต้องของข้อมูลที่ส่งมาจาก Frontend
+      if (!body.idToken || !body.score || !body.total || !body.userId) {
+        return jsonResponse({ error: "ข้อมูลไม่ครบถ้วน" }, 400);
+      }
 
-      const vr=await fetch("https://api.line.me/oauth2/v2.1/verify",{
-        method:"POST",
-        headers:{"Content-Type":"application/x-www-form-urlencoded"},
-        body:verify
+      // 3. ตรวจสอบ LINE ID Token
+      const verifyParams = new URLSearchParams();
+      verifyParams.set("id_token", body.idToken);
+      verifyParams.set("client_id", env.LINE_CHANNEL_ID);
+
+      const verifyRes = await fetch("https://api.line.me/oauth2/v2.1/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: verifyParams
       });
-      const v=await vr.json();
-      if(!vr.ok || v.sub!==body.userId) return json({error:"LINE token ไม่ถูกต้อง"},401);
 
-      const text=
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok || verifyData.sub !== body.userId) {
+        return jsonResponse({ error: "LINE ID Token ไม่ถูกต้องหรือหมดอายุ" }, 401);
+      }
+
+      // 4. เตรียมข้อความแจ้งผลการทดสอบ
+      const textMessage = 
 `ผลการทดสอบวิชาชีพทรัพยากรบุคคล ระดับ 3
 
-ชื่อผู้สอบ: ${body.displayName}
+ชื่อผู้สอบ: ${body.displayName || "ไม่ระบุชื่อ"}
 คะแนน: ${body.score}/${body.total}
-คิดเป็น: ${Math.round(body.score/body.total*100)}%
-วันที่: ${new Intl.DateTimeFormat("th-TH",{dateStyle:"long",timeStyle:"short",timeZone:"Asia/Bangkok"}).format(new Date())}`;
+คิดเป็น: ${Math.round((body.score / body.total) * 100)}%
+วันที่: ${new Intl.DateTimeFormat("th-TH", { dateStyle: "long", timeStyle: "short", timeZone: "Asia/Bangkok" }).format(new Date())}`;
 
-      const msg=await fetch("https://api.line.me/v2/bot/message/push",{
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json",
-          "Authorization":"Bearer "+env.LINE_CHANNEL_ACCESS_TOKEN
+      // 5. ส่ง Push Message กลับหาผู้ใช้ผ่าน LINE Messaging API
+      const linePushRes = await fetch("https://api.line.me/v2/bot/message/push", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${env.LINE_CHANNEL_ACCESS_TOKEN}`
         },
-        body:JSON.stringify({to:body.userId,messages:[{type:"text",text}]})
+        body: JSON.stringify({
+          to: body.userId,
+          messages: [{ type: "text", text: textMessage }]
+        })
       });
-      if(!msg.ok) return json({error:"LINE ส่งข้อความไม่สำเร็จ"},502);
 
-      return json({ok:true,message:"ส่งผลเข้าห้องแชท LINE เรียบร้อยแล้ว"});
-    }catch(e){
-      return json({error:e.message||"Server error"},500);
+      if (!linePushRes.ok) {
+        const lineErr = await linePushRes.json();
+        return jsonResponse({ error: "LINE Messaging API ส่งข้อความไม่สำเร็จ", details: lineErr }, 502);
+      }
+
+      return jsonResponse({ ok: true, message: "ส่งผลเข้าห้องแชท LINE เรียบร้อยแล้ว" }, 200);
+
+    } catch (e) {
+      return jsonResponse({ error: e.message || "Internal Server Error" }, 500);
     }
   }
 };
 
-function cors(){return {"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"Content-Type","Access-Control-Allow-Methods":"POST,OPTIONS"}}
-function json(x,status=200){return new Response(JSON.stringify(x),{status,headers:{"Content-Type":"application/json",...cors()}})}
+// Helper function สำหรับสร้าง CORS Headers
+function getCorsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  };
+}
+
+// Helper function สำหรับตอบกลับ JSON พร้อม CORS
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      ...getCorsHeaders()
+    }
+  });
+}
